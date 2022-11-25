@@ -9,8 +9,7 @@ class FieldElement:
 
     def __init__(self, num, prime):
         if num >= prime or num < 0:
-            error = 'Num {} not in field range 0 to {}'.format(
-                num, prime - 1)
+            error = 'Num {} not in field range 0 to {}'.format(num, prime - 1)
             raise ValueError(error)
         self.num = num
         self.prime = prime
@@ -68,7 +67,8 @@ class FieldElement:
         # self.num**(p-1) % p == 1
         # this means:
         # 1/n == pow(n, p-2, p)
-        num = (self.num * pow(other.num, self.prime - 2, self.prime)) % self.prime
+        num = (self.num *
+               pow(other.num, self.prime - 2, self.prime)) % self.prime
         # We return an element of the same class
         return self.__class__(num, self.prime)
 
@@ -143,6 +143,7 @@ class Point:
             return
         if self.y**2 != self.x**3 + a * x + b:
             raise ValueError('({}, {}) is not on the curve'.format(x, y))
+
     # end::source1[]
 
     def __eq__(self, other):
@@ -164,7 +165,8 @@ class Point:
 
     def __add__(self, other):
         if self.a != other.a or self.b != other.b:
-            raise TypeError('Points {}, {} are not on the same curve'.format(self, other))
+            raise TypeError('Points {}, {} are not on the same curve'.format(
+                self, other))
         # Case 0.0: self is the point at infinity, return other
         if self.x is None:
             return other
@@ -217,6 +219,7 @@ class Point:
             current += current  # <4>
             coef >>= 1  # <5>
         return result
+
     # end::source3[]
 
 
@@ -271,6 +274,7 @@ class ECCTest(TestCase):
             y = FieldElement(y_raw, prime)
             with self.assertRaises(ValueError):
                 Point(x, y, a, b)  # <1>
+
     # end::source2[]
 
     def test_add(self):
@@ -287,13 +291,26 @@ class ECCTest(TestCase):
             (192, 105, 17, 56, 170, 142),
             (47, 71, 117, 141, 60, 139),
             (143, 98, 76, 66, 47, 71),
+            (170, 142, 60, 139, 220, 181),
+            (47, 71, 17, 56, 215, 68),
+            (143, 98, 76, 66, 47, 71),
         )
 
         # loop over additions
         # initialize x's and y's as FieldElements
         # create p1, p2 and p3 as Points
         # check p1+p2==p3
-        raise NotImplementedError
+        for x1, y1, x2, y2, x3, y3 in additions:
+            x1 = FieldElement(x1, prime)
+            y1 = FieldElement(y1, prime)
+            p1 = Point(x1, y1, a, b)
+            x2 = FieldElement(x2, prime)
+            y2 = FieldElement(y2, prime)
+            p2 = Point(x2, y2, a, b)
+            x3 = FieldElement(x3, prime)
+            y3 = FieldElement(y3, prime)
+            p3 = Point(x3, y3, a, b)
+            self.assertEqual(p1 + p2, p3)
 
     def test_rmul(self):
         # tests the following scalar multiplications
@@ -343,6 +360,7 @@ P = 2**256 - 2**32 - 977
 # end::source4[]
 # tag::source9[]
 N = 0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141
+
 # end::source9[]
 
 
@@ -354,6 +372,8 @@ class S256Field(FieldElement):
 
     def __repr__(self):
         return '{:x}'.format(self.num).zfill(64)
+
+
 # end::source5[]
 
 
@@ -366,6 +386,7 @@ class S256Point(Point):
             super().__init__(x=S256Field(x), y=S256Field(y), a=a, b=b)
         else:
             super().__init__(x=x, y=y, a=a, b=b)  # <1>
+
     # end::source7[]
 
     def __repr__(self):
@@ -378,6 +399,7 @@ class S256Point(Point):
     def __rmul__(self, coefficient):
         coef = coefficient % N  # <1>
         return super().__rmul__(coef)
+
     # end::source8[]
 
     # tag::source12[]
@@ -387,6 +409,7 @@ class S256Point(Point):
         v = sig.r * s_inv % N  # <3>
         total = u * G + v * self  # <4>
         return total.x.num == sig.r  # <5>
+
     # end::source12[]
 
 
@@ -407,10 +430,22 @@ class S256Test(TestCase):
         # write a test that tests the public point for the following
         points = (
             # secret, x, y
-            (7, 0x5cbdf0646e5db4eaa398f365f2ea7a0e3d419b7e0330e39ce92bddedcac4f9bc, 0x6aebca40ba255960a3178d6d861a54dba813d0b813fde7b5a5082628087264da),
-            (1485, 0xc982196a7466fbbbb0e27a940b6af926c1a74d5ad07128c82824a11b5398afda, 0x7a91f9eae64438afb9ce6448a1c133db2d8fb9254e4546b6f001637d50901f55),
-            (2**128, 0x8f68b9d2f63b5f339239c1ad981f162ee88c5678723ea3351b7b444c9ec4c0da, 0x662a9f2dba063986de1d90c2b6be215dbbea2cfe95510bfdf23cbf79501fff82),
-            (2**240 + 2**31, 0x9577ff57c8234558f293df502ca4f09cbc65a6572c842b39b366f21717945116, 0x10b49c67fa9365ad7b90dab070be339a1daf9052373ec30ffae4f72d5e66d053),
+            (7,
+             0x5cbdf0646e5db4eaa398f365f2ea7a0e3d419b7e0330e39ce92bddedcac4f9bc,
+             0x6aebca40ba255960a3178d6d861a54dba813d0b813fde7b5a5082628087264da
+             ),
+            (1485,
+             0xc982196a7466fbbbb0e27a940b6af926c1a74d5ad07128c82824a11b5398afda,
+             0x7a91f9eae64438afb9ce6448a1c133db2d8fb9254e4546b6f001637d50901f55
+             ),
+            (2**128,
+             0x8f68b9d2f63b5f339239c1ad981f162ee88c5678723ea3351b7b444c9ec4c0da,
+             0x662a9f2dba063986de1d90c2b6be215dbbea2cfe95510bfdf23cbf79501fff82
+             ),
+            (2**240 + 2**31,
+             0x9577ff57c8234558f293df502ca4f09cbc65a6572c842b39b366f21717945116,
+             0x10b49c67fa9365ad7b90dab070be339a1daf9052373ec30ffae4f72d5e66d053
+             ),
         )
 
         # iterate over points
@@ -443,6 +478,8 @@ class Signature:
 
     def __repr__(self):
         return 'Signature({:x},{:x})'.format(self.r, self.s)
+
+
 # end::source11[]
 
 
@@ -455,6 +492,7 @@ class PrivateKey:
 
     def hex(self):
         return '{:x}'.format(self.secret).zfill(64)
+
     # end::source13[]
 
     # tag::source14[]
@@ -486,6 +524,7 @@ class PrivateKey:
                 return candidate  # <2>
             k = hmac.new(k, v + b'\x00', s256).digest()
             v = hmac.new(k, v, s256).digest()
+
     # end::source14[]
 
 
