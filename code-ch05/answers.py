@@ -61,17 +61,13 @@ OP_EQUALVERIFY OP_CHECKSIG
 # end::answer5[]
 '''
 
-
 from unittest import TestCase
 
 from helper import little_endian_to_int, read_varint
 from script import Script
 from tx import Tx, TxIn, TxOut
 
-
 methods = []
-
-
 '''
 # tag::exercise1[]
 ==== Exercise 1
@@ -113,12 +109,11 @@ def parse(cls, s):
     script_sig = Script.parse(s)
     sequence = little_endian_to_int(s.read(4))
     return cls(prev_tx, prev_index, script_sig, sequence)
+
+
 # end::answer2.2[]
 
-
 methods.append(parse)
-
-
 '''
 # tag::exercise3[]
 ==== Exercise 3
@@ -153,12 +148,11 @@ def parse(cls, s):
     amount = little_endian_to_int(s.read(8))
     script_pubkey = Script.parse(s)
     return cls(amount, script_pubkey)
+
+
 # end::answer3.2[]
 
-
 methods.append(parse)
-
-
 '''
 # tag::exercise4[]
 ==== Exercise 4
@@ -182,12 +176,11 @@ def parse(cls, s, testnet=False):
         outputs.append(TxOut.parse(s))
     locktime = little_endian_to_int(s.read(4))
     return cls(version, inputs, outputs, locktime, testnet=testnet)
+
+
 # end::answer4[]
 
-
 methods.append(parse)
-
-
 '''
 # tag::exercise6[]
 ==== Exercise 6
@@ -205,6 +198,8 @@ def fee(self, testnet=False):
     for tx_out in self.tx_outs:
         output_sum += tx_out.amount
     return input_sum - output_sum
+
+
 # end::answer6[]
 
 
