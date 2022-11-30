@@ -2,7 +2,6 @@ from unittest import TestCase, TestSuite, TextTestRunner
 
 import hashlib
 
-
 SIGHASH_ALL = 1
 SIGHASH_NONE = 2
 SIGHASH_SINGLE = 3
@@ -56,7 +55,9 @@ def decode_base58(s):
     combined = num.to_bytes(25, byteorder='big')
     checksum = combined[-4:]
     if hash256(combined[:-4])[:4] != checksum:
-        raise ValueError('bad address: {} {}'.format(checksum, hash256(combined[:-4])[:4]))
+        raise ValueError('bad address: {} {}'.format(
+            checksum,
+            hash256(combined[:-4])[:4]))
     return combined[1:-4]
 
 
@@ -129,7 +130,9 @@ def bits_to_target(bits):
     # the first three bytes are the coefficient in little endian
     # the formula is:
     # coefficient * 256**(exponent-3)
-    raise NotImplementedError
+    exponent = bits[-1]
+    coefficient = little_endian_to_int(bits[:-1])
+    return coefficient * 256**(exponent - 3)
 
 
 # tag::source1[]
@@ -145,6 +148,8 @@ def target_to_bits(target):
         coefficient = raw_bytes[:3]  # <4>
     new_bits = coefficient[::-1] + bytes([exponent])  # <5>
     return new_bits
+
+
 # end::source1[]
 
 
@@ -156,7 +161,14 @@ def calculate_new_bits(previous_bits, time_differential):
     # the new target is the previous target * time differential / two weeks
     # if the new target is bigger than MAX_TARGET, set to MAX_TARGET
     # convert the new target to bits
-    raise NotImplementedError
+    if time_differential > TWO_WEEKS * 4:
+        time_differential = TWO_WEEKS * 4
+    elif time_differential < TWO_WEEKS // 4:
+        time_differential = TWO_WEEKS // 4
+    previous_target = bits_to_target(previous_bits)
+    new_target = previous_target * time_differential // TWO_WEEKS
+    new_bits = target_to_bits(new_target)
+    return new_bits
 
 
 class HelperTest(TestCase):
@@ -203,4 +215,5 @@ class HelperTest(TestCase):
         prev_bits = bytes.fromhex('54d80118')
         time_differential = 302400
         want = bytes.fromhex('00157617')
-        self.assertEqual(calculate_new_bits(prev_bits, time_differential), want)
+        self.assertEqual(calculate_new_bits(prev_bits, time_differential),
+                         want)
