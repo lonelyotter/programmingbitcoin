@@ -2,7 +2,6 @@ from unittest import TestCase, TestSuite, TextTestRunner
 
 import hashlib
 
-
 SIGHASH_ALL = 1
 SIGHASH_NONE = 2
 SIGHASH_SINGLE = 3
@@ -57,7 +56,9 @@ def decode_base58(s):
     combined = num.to_bytes(25, byteorder='big')
     checksum = combined[-4:]
     if hash256(combined[:-4])[:4] != checksum:
-        raise ValueError('bad address: {} {}'.format(checksum, hash256(combined[:-4])[:4]))
+        raise ValueError('bad address: {} {}'.format(
+            checksum,
+            hash256(combined[:-4])[:4]))
     return combined[1:-4]
 
 
@@ -176,7 +177,7 @@ def calculate_new_bits(previous_bits, time_differential):
 def merkle_parent(hash1, hash2):
     '''Takes the binary hashes and calculates the hash256'''
     # return the hash256 of hash1 + hash2
-    raise NotImplementedError
+    return hash256(hash1 + hash2)
 
 
 def merkle_parent_level(hashes):
@@ -187,10 +188,17 @@ def merkle_parent_level(hashes):
     # and put it at the end so it has an even number of elements
     # initialize next level
     # loop over every pair (use: for i in range(0, len(hashes), 2))
-        # get the merkle parent of the hashes at index i and i+1
-        # append parent to parent level
+    # get the merkle parent of the hashes at index i and i+1
+    # append parent to parent level
     # return parent level
-    raise NotImplementedError
+    if len(hashes) == 1:
+        raise RuntimeError('Cannot have a single hash')
+    if len(hashes) % 2 == 1:
+        hashes.append(hashes[-1])
+    next_level = []
+    for i in range(0, len(hashes), 2):
+        next_level.append(merkle_parent(hashes[i], hashes[i + 1]))
+    return next_level
 
 
 def merkle_root(hashes):
@@ -198,14 +206,18 @@ def merkle_root(hashes):
     '''
     # current level starts as hashes
     # loop until there's exactly 1 element
-        # current level becomes the merkle parent level
+    # current level becomes the merkle parent level
     # return the 1st item of the current level
-    raise NotImplementedError
+    current_level = hashes
+    while len(current_level) > 1:
+        current_level = merkle_parent_level(current_level)
+    return current_level[0]
 
 
 def bit_field_to_bytes(bit_field):
     if len(bit_field) % 8 != 0:
-        raise RuntimeError('bit_field does not have a length that is divisible by 8')
+        raise RuntimeError(
+            'bit_field does not have a length that is divisible by 8')
     result = bytearray(len(bit_field) // 8)
     for i, bit in enumerate(bit_field):
         byte_index, bit_index = divmod(i, 8)
@@ -222,6 +234,8 @@ def bytes_to_bit_field(some_bytes):
             flag_bits.append(byte & 1)
             byte >>= 1
     return flag_bits
+
+
 # end::source1[]
 
 
@@ -269,12 +283,16 @@ class HelperTest(TestCase):
         prev_bits = bytes.fromhex('54d80118')
         time_differential = 302400
         want = bytes.fromhex('00157617')
-        self.assertEqual(calculate_new_bits(prev_bits, time_differential), want)
+        self.assertEqual(calculate_new_bits(prev_bits, time_differential),
+                         want)
 
     def test_merkle_parent(self):
-        tx_hash0 = bytes.fromhex('c117ea8ec828342f4dfb0ad6bd140e03a50720ece40169ee38bdc15d9eb64cf5')
-        tx_hash1 = bytes.fromhex('c131474164b412e3406696da1ee20ab0fc9bf41c8f05fa8ceea7a08d672d7cc5')
-        want = bytes.fromhex('8b30c5ba100f6f2e5ad1e2a742e5020491240f8eb514fe97c713c31718ad7ecd')
+        tx_hash0 = bytes.fromhex(
+            'c117ea8ec828342f4dfb0ad6bd140e03a50720ece40169ee38bdc15d9eb64cf5')
+        tx_hash1 = bytes.fromhex(
+            'c131474164b412e3406696da1ee20ab0fc9bf41c8f05fa8ceea7a08d672d7cc5')
+        want = bytes.fromhex(
+            '8b30c5ba100f6f2e5ad1e2a742e5020491240f8eb514fe97c713c31718ad7ecd')
         self.assertEqual(merkle_parent(tx_hash0, tx_hash1), want)
 
     def test_merkle_parent_level(self):

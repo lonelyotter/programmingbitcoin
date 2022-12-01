@@ -40,6 +40,7 @@ class MerkleTree:
                     items.append('{}'.format(short))
             result.append(', '.join(items))
         return '\n'.join(result)
+
     # end::source1[]
 
     # tag::source2[]
@@ -76,6 +77,7 @@ class MerkleTree:
     def right_exists(self):  # <3>
         return len(self.nodes[self.current_depth + 1]) > \
             self.current_index * 2 + 1
+
     # end::source2[]
 
     # tag::source3[]
@@ -98,17 +100,19 @@ class MerkleTree:
                     if right_hash is None:  # <9>
                         self.right()
                     else:  # <10>
-                        self.set_current_node(merkle_parent(left_hash, 
-                        right_hash))
+                        self.set_current_node(
+                            merkle_parent(left_hash, right_hash))
                         self.up()
                 else:  # <11>
                     self.set_current_node(merkle_parent(left_hash, left_hash))
                     self.up()
         if len(hashes) != 0:  # <12>
-            raise RuntimeError('hashes not all consumed {}'.format(len(hashes)))
+            raise RuntimeError('hashes not all consumed {}'.format(
+                len(hashes)))
         for flag_bit in flag_bits:  # <13>
             if flag_bit != 0:
                 raise RuntimeError('flag bits not all consumed')
+
     # end::source3[]
 
 
@@ -164,7 +168,8 @@ class MerkleTreeTest(TestCase):
 
 class MerkleBlock:
 
-    def __init__(self, version, prev_block, merkle_root, timestamp, bits, nonce, total, hashes, flags):
+    def __init__(self, version, prev_block, merkle_root, timestamp, bits,
+                 nonce, total, hashes, flags):
         self.version = version
         self.prev_block = prev_block
         self.merkle_root = merkle_root
@@ -185,27 +190,45 @@ class MerkleBlock:
     def parse(cls, s):
         '''Takes a byte stream and parses a merkle block. Returns a Merkle Block object'''
         # version - 4 bytes, Little-Endian integer
+        version = little_endian_to_int(s.read(4))
         # prev_block - 32 bytes, Little-Endian (use [::-1])
+        prev_block = s.read(32)[::-1]
         # merkle_root - 32 bytes, Little-Endian (use [::-1])
+        merkle_root = s.read(32)[::-1]
         # timestamp - 4 bytes, Little-Endian integer
+        timestamp = little_endian_to_int(s.read(4))
         # bits - 4 bytes
+        bits = s.read(4)
         # nonce - 4 bytes
+        nonce = s.read(4)
         # total transactions in block - 4 bytes, Little-Endian integer
+        total = little_endian_to_int(s.read(4))
         # number of transaction hashes - varint
+        num_hashes = read_varint(s)
         # each transaction is 32 bytes, Little-Endian
+        hashes = []
+        for _ in range(num_hashes):
+            hashes.append(s.read(32)[::-1])
         # length of flags field - varint
+        num_flags = read_varint(s)
         # read the flags field
+        flags = s.read(num_flags)
         # initialize class
-        raise NotImplementedError
+        return cls(version, prev_block, merkle_root, timestamp, bits, nonce,
+                   total, hashes, flags)
 
     def is_valid(self):
         '''Verifies whether the merkle tree information validates to the merkle root'''
         # convert the flags field to a bit field
+        bit_field = bytes_to_bit_field(self.flags)
         # reverse self.hashes for the merkle root calculation
+        hashes = [h[::-1] for h in self.hashes]
         # initialize the merkle tree
+        tree = MerkleTree(self.total)
         # populate the tree with flag bits and hashes
+        tree.populate_tree(bit_field, hashes)
         # check if the computed root reversed is the same as the merkle root
-        raise NotImplementedError
+        return tree.root()[::-1] == self.merkle_root
 
 
 class MerkleBlockTest(TestCase):
